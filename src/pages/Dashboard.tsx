@@ -6,7 +6,7 @@ import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
-import { currency, shortAddress } from '../components/ui';
+import { formatAmount, shortAddress } from '../components/ui';
 import { type Deposit, useStore } from '../store/useStore';
 
 const networkLabels = ['TRC20', 'ERC20', 'BEP20'] as const;
@@ -16,6 +16,7 @@ const Dashboard = () => {
   const deposits = useStore((state) => state.deposits);
   const wallets = useStore((state) => state.wallets);
   const users = useStore((state) => state.users);
+  const displayCurrency = useStore((state) => state.appSettings.general.displayCurrency);
 
   const totalDeposits = deposits.reduce((sum, deposit) => sum + deposit.amount, 0);
   const pendingDeposits = deposits.filter((deposit) => deposit.status === 'pending').length;
@@ -27,7 +28,7 @@ const Dashboard = () => {
   const columns: Column<Deposit>[] = [
     { key: 'id', label: 'ID', render: (value) => <span className="font-mono text-xs text-slate-500">#{String(value)}</span> },
     { key: 'user', label: 'User' },
-    { key: 'amount', label: 'Amount', render: (value) => <span className="font-semibold text-emerald-300">{currency(Number(value))}</span> },
+    { key: 'amount', label: 'Amount', render: (value) => <span className="font-semibold text-emerald-300">{formatAmount(Number(value), displayCurrency)}</span> },
     { key: 'network', label: 'Network', render: (value) => <StatusBadge value={String(value)} tone="cyan" /> },
     { key: 'status', label: 'Status', render: (value) => <StatusBadge value={String(value)} withIcon /> },
     { key: 'date', label: 'Date' },
@@ -46,7 +47,7 @@ const Dashboard = () => {
       />
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard icon={ArrowDownToLine} subtitle={`${deposits.length} mock transactions`} title="Total Deposits" tone="cyan" value={currency(totalDeposits)} />
+        <StatCard icon={ArrowDownToLine} subtitle={`${deposits.length} mock transactions`} title="Total Deposits" tone="cyan" value={formatAmount(totalDeposits, displayCurrency)} />
         <StatCard icon={Clock3} subtitle="Awaiting detection" title="Pending" tone="amber" value={pendingDeposits} />
         <StatCard icon={CheckCircle2} subtitle="Successfully processed" title="Completed" tone="green" value={completedDeposits} />
         <StatCard icon={Wallet} subtitle={`${activeWallets} active`} title="Wallets" tone="blue" value={wallets.length} />
@@ -82,7 +83,7 @@ const Dashboard = () => {
                     <p className="truncate font-bold text-white">{deposit.user}</p>
                     <p className="mt-1 font-mono text-xs text-slate-500">#{deposit.id}</p>
                   </div>
-                  <p className="text-lg font-bold text-emerald-300">{currency(deposit.amount)}</p>
+                  <p className="text-lg font-bold text-emerald-300">{formatAmount(deposit.amount, displayCurrency)}</p>
                 </div>
                 <div className="mt-4 grid gap-2">
                   <div className="flex items-center justify-between rounded-lg bg-slate-950/60 px-3 py-2">
@@ -152,7 +153,7 @@ const Dashboard = () => {
               </div>
               {latest ? (
                 <>
-                  <p className="mt-4 text-2xl font-bold text-white">{currency(volume)}</p>
+                  <p className="mt-4 text-2xl font-bold text-white">{formatAmount(volume, displayCurrency)}</p>
                   <p className="mt-1 text-sm text-slate-500">{networkDeposits.length} deposits tracked</p>
                   <div className="mt-4 rounded-lg bg-slate-950/60 p-3">
                     <p className="text-xs text-slate-500">Latest address</p>
