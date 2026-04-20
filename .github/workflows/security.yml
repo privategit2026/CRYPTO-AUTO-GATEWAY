@@ -1,0 +1,60 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run every Monday at 08:00 UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # ─── Model: o3 — Deep security reasoning ──────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit (o3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Audit backend dependencies
+        working-directory: server
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+  # ─── Model: o3 — CodeQL static analysis ───────────────────────────────────
+  codeql:
+    name: CodeQL Analysis (o3)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
