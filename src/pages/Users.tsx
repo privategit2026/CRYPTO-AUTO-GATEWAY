@@ -7,6 +7,7 @@ import DataTable, { type Column } from '../components/DataTable';
 import { DataCard, DetailItem, MobileRow } from '../components/DetailBlocks';
 import FilterBar from '../components/FilterBar';
 import FormModal from '../components/FormModal';
+import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
@@ -219,7 +220,7 @@ const Users = () => {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <PageContainer>
       <PageHeader
         actions={
           <button
@@ -424,7 +425,7 @@ const Users = () => {
         onConfirm={handleDelete}
         title="Confirm Delete"
       />
-    </div>
+    </PageContainer>
   );
 };
 

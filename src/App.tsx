@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AppHeader from './components/AppHeader';
 import AppSidebar from './components/AppSidebar';
 import CommandPalette from './components/CommandPalette';
+import MobileBottomNav from './components/MobileBottomNav';
 import { ToastProvider } from './components/ToastProvider';
 import Activity from './pages/Activity';
 import ApiKeys from './pages/ApiKeys';
@@ -49,7 +50,7 @@ const App = () => {
                 onSearchChange={setGlobalSearch}
                 searchQuery={globalSearch}
               />
-              <main className="flex-1 overflow-auto">
+              <main className="flex-1 overflow-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/deposits" element={<Deposits />} />
@@ -62,6 +63,7 @@ const App = () => {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
+              <MobileBottomNav />
             </div>
           </div>
         </div>
