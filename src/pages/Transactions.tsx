@@ -9,7 +9,7 @@ import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
 import Tabs from '../components/Tabs';
-import { shortAddress } from '../components/ui';
+import { formatAmount, shortAddress } from '../components/ui';
 import { type Transaction } from '../mock/transactions';
 import { useStore } from '../store/useStore';
 
@@ -19,6 +19,7 @@ type SortKey = 'createdAt' | 'amount' | 'status' | '';
 const Transactions = () => {
   const transactions = useStore((state) => state.transactions);
   const [searchParams, setSearchParams] = useSearchParams();
+  const displayCurrency = useStore((state) => state.appSettings.general.displayCurrency);
 
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState<StatusTab>('all');
@@ -95,11 +96,7 @@ const Transactions = () => {
       key: 'amount',
       label: 'Amount',
       sortable: true,
-      render: (value, row) => (
-        <span className="font-semibold text-emerald-300">
-          ${Number(value).toFixed(2)} <span className="text-xs text-slate-500">{row.currency}</span>
-        </span>
-      ),
+      render: (value) => <span className="font-semibold text-emerald-300">{formatAmount(Number(value), displayCurrency)}</span>,
     },
     { key: 'network', label: 'Network', render: (value) => <StatusBadge value={String(value)} tone="cyan" /> },
     { key: 'status', label: 'Status', sortable: true, render: (value) => <StatusBadge value={String(value)} withIcon /> },
@@ -116,8 +113,8 @@ const Transactions = () => {
 
       <section className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={CreditCard} subtitle="Mock transactions" title="Total" tone="cyan" value={transactions.length} />
-        <StatCard icon={DollarSign} subtitle="Completed only" title="Volume" tone="green" value={`$${totalVolume.toLocaleString()}`} />
-        <StatCard icon={Receipt} subtitle="Completed only" title="Fees" tone="blue" value={`$${totalFees.toFixed(2)}`} />
+        <StatCard icon={DollarSign} subtitle="Completed only" title="Volume" tone="green" value={formatAmount(totalVolume, displayCurrency)} />
+        <StatCard icon={Receipt} subtitle="Completed only" title="Fees" tone="blue" value={formatAmount(totalFees, displayCurrency)} />
         <StatCard icon={TrendingUp} subtitle="Completed count" title="Completed" tone="violet" value={counts.completed} />
       </section>
 
@@ -190,7 +187,7 @@ const Transactions = () => {
                 <p className="font-mono text-sm font-bold text-cyan-200">{transaction.orderId}</p>
                 <p className="mt-1 truncate text-sm text-slate-500">{transaction.merchant}</p>
               </div>
-              <p className="text-lg font-bold text-emerald-300">${transaction.amount.toFixed(2)}</p>
+              <p className="text-lg font-bold text-emerald-300">{formatAmount(transaction.amount, displayCurrency)}</p>
             </div>
             <div className="mt-4 grid gap-2">
               <MobileRow label="Network" value={<StatusBadge value={transaction.network} tone="cyan" />} />
@@ -214,8 +211,8 @@ const Transactions = () => {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <DetailItem label="Order ID" value={selectedTx.orderId} />
               <DetailItem label="Merchant" value={selectedTx.merchant} />
-              <DetailItem label="Amount" value={`$${selectedTx.amount.toFixed(2)} ${selectedTx.currency}`} valueClassName="text-emerald-300" />
-              <DetailItem label="Fee" value={`$${selectedTx.fee.toFixed(2)}`} />
+              <DetailItem label="Amount" value={formatAmount(selectedTx.amount, displayCurrency)} valueClassName="text-emerald-300" />
+              <DetailItem label="Fee" value={formatAmount(selectedTx.fee, displayCurrency)} />
               <DetailItem label="Network" value={<StatusBadge value={selectedTx.network} tone="cyan" />} />
               <DetailItem label="Status" value={<StatusBadge value={selectedTx.status} withIcon />} />
               <DetailItem label="Confirmations" value={`${selectedTx.confirmations} / ${selectedTx.requiredConfirmations}`} />

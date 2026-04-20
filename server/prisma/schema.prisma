@@ -1,0 +1,288 @@
+// CryptoGate Admin — PostgreSQL schema (backend/server)
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SYSTEM_ADMIN
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum WalletStatus {
+  ACTIVE
+  USED
+  INACTIVE
+  ARCHIVED
+}
+
+enum DepositStatus {
+  PENDING
+  DETECTED
+  CONFIRMING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+/// Supported EVM / TRON-style networks for USDT and automation hooks.
+enum CryptoNetwork {
+  TRC20
+  ERC20
+  BEP20
+  POLYGON
+  ARBITRUM
+  OPTIMISM
+  BASE
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum ApiKeyPermission {
+  READ
+  WRITE
+  WEBHOOKS
+}
+
+enum ActivityCategory {
+  DEPOSIT
+  WALLET
+  USER
+  API
+  SYSTEM
+  SECURITY
+  AUTH
+}
+
+enum ActivitySeverity {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id     String     @id @default(cuid())
+  email  String     @unique
+  name   String
+  role   UserRole   @default(VIEWER)
+  status UserStatus @default(ACTIVE)
+
+  /// Merchant / workspace display name.
+  companyName String?
+
+  phone           String?
+  avatarUrl       String?
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+
+  externalId String? @unique
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallets          Wallet[]      @relation("WalletAssignee")
+  deposits         Deposit[]     @relation("DepositOwner")
+  apiKeys          ApiKey[]
+  activityAsActor  ActivityLog[] @relation("ActivityActor")
+  activityAsTarget ActivityLog[] @relation("ActivityTarget")
+
+  @@index([status, createdAt])
+  @@index([role, status])
+  @@index([name])
+}
+
+model Wallet {
+  id String @id @default(cuid())
+
+  /// Short human label shown in UI ("Main TRC20 hot wallet").
+  label String?
+
+  /// Normalized on-chain address.
+  address String
+  network CryptoNetwork
+  status  WalletStatus  @default(ACTIVE)
+
+  /// Nullable per project spec: a wallet may be unassigned / pool wallet.
+  assignedUserId String?
+  assignedUser   User?   @relation("WalletAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  /// HD / automation (optional)
+  derivationPath String?
+  addressIndex   Int?
+  isWatchOnly    Boolean @default(false)
+
+  lastSyncedBlock      BigInt?
+  lastSyncedAt         DateTime?
+  tokenContractAddress String?
+  automationMetadata   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deposits     Deposit[]
+  activityLogs ActivityLog[]
+
+  @@unique([network, address])
+  @@index([assignedUserId, status])
+  @@index([network, status])
+  @@index([status, createdAt])
+  @@index([label])
+}
+
+model Deposit {
+  id String @id @default(cuid())
+
+  /// Owning user if known — nullable so unresolved/public deposits can exist.
+  userId String?
+  user   User?   @relation("DepositOwner", fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Human label that is always present (falls back to "Unknown", etc.).
+  userDisplayName String
+
+  walletId String?
+  wallet   Wallet? @relation(fields: [walletId], references: [id], onDelete: SetNull)
+
+  amount      Decimal       @db.Decimal(38, 18)
+  assetSymbol String        @default("USDT")
+  network     CryptoNetwork
+
+  /// Destination / watched address for this payment.
+  address String
+  /// On-chain transaction id. Unique when present.
+  txid    String?
+
+  status                DepositStatus @default(PENDING)
+  confirmations         Int           @default(0)
+  requiredConfirmations Int?
+
+  detectedAt  DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+
+  externalOrderId String?
+  idempotencyKey  String? @unique
+
+  rawPayload         Json?
+  automationMetadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activityLogs ActivityLog[]
+
+  @@unique([network, txid])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([network, status])
+  @@index([externalOrderId])
+  @@index([userDisplayName])
+  @@index([address])
+}
+
+model ApiKey {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  merchant String
+
+  /// Short preview string for UI display ("pk_live_••••Ab12").
+  keyPreview String
+  /// Cryptographic hash of the full key. Raw key is only returned once at creation.
+  keyHash    String @unique
+
+  permissions ApiKeyPermission[]
+  status      ApiKeyStatus       @default(ACTIVE)
+
+  rateLimit     Int @default(5000)
+  requestsToday Int @default(0)
+
+  lastUsedAt    DateTime?
+  expiresAt     DateTime?
+  lastRequestIp String?
+
+  rotatedFromId String?
+  rotatedFrom   ApiKey?  @relation("ApiKeyRotation", fields: [rotatedFromId], references: [id], onDelete: SetNull)
+  rotatedTo     ApiKey[] @relation("ApiKeyRotation")
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activityLogs ActivityLog[]
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+  @@index([merchant])
+  @@index([name])
+}
+
+model ActivityLog {
+  id String @id @default(cuid())
+
+  action      String
+  category    ActivityCategory
+  description String           @db.Text
+  severity    ActivitySeverity @default(INFO)
+
+  /// Who performed the action (null = system/cron).
+  actorUserId String?
+  actorUser   User?   @relation("ActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  /// Denormalized label, always present ("System", full user name, etc.).
+  actorName   String  @default("System")
+
+  ipAddress String?
+  userAgent String?
+
+  targetUserId String?
+  targetUser   User?   @relation("ActivityTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  depositId String?
+  deposit   Deposit? @relation(fields: [depositId], references: [id], onDelete: SetNull)
+
+  walletId String?
+  wallet   Wallet? @relation(fields: [walletId], references: [id], onDelete: SetNull)
+
+  apiKeyId String?
+  apiKey   ApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  requestId String?
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, createdAt(sort: Desc)])
+  @@index([severity, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([action])
+  @@index([actorName])
+}
