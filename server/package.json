@@ -2,6 +2,7 @@
   "name": "cryptogate-server",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "CryptoGate Admin backend API — users, wallets, deposits, dashboard, API keys, and activity.",
   "main": "dist/server.js",
   "scripts": {

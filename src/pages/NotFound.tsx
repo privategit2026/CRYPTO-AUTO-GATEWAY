@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState';
+import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
 
 const NotFound = () => (
-  <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+  <PageContainer className="py-10">
     <PageHeader
       breadcrumbs={['CryptoGate', '404']}
       description="This admin dashboard is frontend-only. If you followed a stale link, use the navigation to get back on track."
@@ -20,7 +21,7 @@ const NotFound = () => (
         </Link>
       </div>
     </div>
-  </div>
+  </PageContainer>
 );
 
 export default NotFound;

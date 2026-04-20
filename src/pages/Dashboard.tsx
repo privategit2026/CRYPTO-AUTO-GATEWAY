@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import CopyButton from '../components/CopyButton';
 import DataTable, { type Column } from '../components/DataTable';
 import EmptyState from '../components/EmptyState';
+import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
@@ -39,7 +40,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <PageContainer>
       <PageHeader
         breadcrumbs={['CryptoGate', 'Overview']}
         description="A frontend-only control room for monitoring mock deposits, wallets, users, and network health."
@@ -167,7 +168,7 @@ const Dashboard = () => {
           );
         })}
       </section>
-    </div>
+    </PageContainer>
   );
 };
 

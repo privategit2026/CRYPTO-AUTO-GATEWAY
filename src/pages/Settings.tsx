@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshCcw, Save, Shield, Sliders, Wifi } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PageContainer from '../components/PageContainer';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import Tabs from '../components/Tabs';
@@ -59,7 +60,7 @@ const Settings = () => {
   }, [settings]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <PageContainer>
       <PageHeader
         actions={
           <div className="flex flex-wrap gap-2">
@@ -260,7 +261,7 @@ const Settings = () => {
         title="Reset Settings"
         tone="warning"
       />
-    </div>
+    </PageContainer>
   );
 };
 

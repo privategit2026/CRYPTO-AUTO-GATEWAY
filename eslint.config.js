@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // This repo ships a frontend-only admin dashboard. Ignore non-frontend folders for linting.
+  globalIgnores(['dist', 'server', 'prisma']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
